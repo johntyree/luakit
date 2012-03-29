@@ -23,12 +23,13 @@
 
 /* include clib headers */
 #include "clib/download.h"
+#include "clib/luakit.h"
 #include "clib/soup/soup.h"
 #include "clib/sqlite3.h"
 #include "clib/timer.h"
-#include "clib/widget.h"
-#include "clib/luakit.h"
 #include "clib/unique.h"
+#include "clib/widget.h"
+#include "clib/xdg.h"
 
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -199,6 +200,30 @@ luaHe_type(lua_State *L)
     return 1;
 }
 
+/** Returns the absolute version of a relative file path, if that file exists.
+ *
+ * \param  L The Lua VM state.
+ * \return   The number of elements pushed on the stack.
+ *
+ * \luastack
+ * \lparam rel_path The relative file path to convert.
+ * \lreturn         Returns the full path of the given file.
+ */
+static gint
+luaH_abspath(lua_State *L)
+{
+    const gchar *path = luaL_checkstring(L, 1);
+    GFile *file = g_file_new_for_path(path);
+    if (!file)
+        return 0;
+    gchar *absolute = g_file_get_path(file);
+    if (!absolute)
+        return 0;
+    lua_pushstring(L, absolute);
+    g_free(absolute);
+    return 1;
+}
+
 /* Fix up and add handy standard lib functions */
 static void
 luaH_fixups(lua_State *L)
@@ -207,6 +232,11 @@ luaH_fixups(lua_State *L)
     lua_getglobal(L, "string");
     lua_pushcfunction(L, &luaH_utf8_strlen);
     lua_setfield(L, -2, "wlen");
+    lua_pop(L, 1);
+    /* export os.abspath */
+    lua_getglobal(L, "os");
+    lua_pushcfunction(L, &luaH_abspath);
+    lua_setfield(L, -2, "abspath");
     lua_pop(L, 1);
     /* replace next */
     lua_pushliteral(L, "next");
@@ -226,93 +256,6 @@ luaH_fixups(lua_State *L)
     lua_pushliteral(L, "type");
     lua_pushcfunction(L, luaHe_type);
     lua_settable(L, LUA_GLOBALSINDEX);
-}
-
-/* Look for an item: table, function, etc.
- * \param L The Lua VM state.
- * \param item The pointer item.
- */
-gboolean
-luaH_hasitem(lua_State *L, gconstpointer item)
-{
-    lua_pushnil(L);
-    while(luaH_mtnext(L, -2)) {
-        if(lua_topointer(L, -1) == item) {
-            /* remove value and key */
-            lua_pop(L, 2);
-            return TRUE;
-        }
-        if(lua_istable(L, -1))
-            if(luaH_hasitem(L, item)) {
-                /* remove key and value */
-                lua_pop(L, 2);
-                return TRUE;
-            }
-        /* remove value */
-        lua_pop(L, 1);
-    }
-    return FALSE;
-}
-
-/* Browse a table pushed on top of the index, and put all its table and
- * sub-table ginto an array.
- * \param L The Lua VM state.
- * \param elems The elements array.
- * \return False if we encounter an elements already in list.
- */
-static gboolean
-luaH_isloop_check(lua_State *L, GPtrArray *elems)
-{
-    if(lua_istable(L, -1)) {
-        gconstpointer object = lua_topointer(L, -1);
-
-        /* Check that the object table is not already in the list */
-        for(guint i = 0; i < elems->len; i++)
-            if(elems->pdata[i] == object)
-                return FALSE;
-
-        /* push the table in the elements list */
-        g_ptr_array_add(elems, (gpointer) object);
-
-        /* look every object in the "table" */
-        lua_pushnil(L);
-        while(luaH_mtnext(L, -2)) {
-            if(!luaH_isloop_check(L, elems)) {
-                /* remove key and value */
-                lua_pop(L, 2);
-                return FALSE;
-            }
-            /* remove value, keep key for next iteration */
-            lua_pop(L, 1);
-        }
-    }
-    return TRUE;
-}
-
-/* Check if a table is a loop. When using tables as direct acyclic digram,
- * this is useful.
- * \param L The Lua VM state.
- * \param idx The index of the table in the stack
- * \return True if the table loops.
- */
-gboolean
-luaH_isloop(lua_State *L, gint idx)
-{
-    /* elems is an elements array that we will fill with all array we
-     * encounter while browsing the tables */
-    GPtrArray *elems = g_ptr_array_new();
-
-    /* push table on top */
-    lua_pushvalue(L, idx);
-
-    gboolean ret = luaH_isloop_check(L, elems);
-
-    /* remove pushed table */
-    lua_pop(L, 1);
-
-    g_ptr_array_free(elems, TRUE);
-
-    return !ret;
 }
 
 static gint
@@ -365,6 +308,9 @@ luaH_init(void)
 
     /* Export luakit lib */
     luakit_lib_setup(L);
+
+    /* Export xdg lib */
+    xdg_lib_setup(L);
 
     /* Export soup lib */
     soup_lib_setup(L);
@@ -516,17 +462,15 @@ bailout:
 }
 
 gint
-luaH_class_index_miss_property(lua_State *L, lua_object_t *obj)
+luaH_class_index_miss_property(lua_State *L, lua_object_t* UNUSED(obj))
 {
-    (void) obj;
     signal_object_emit(L, luakit_class.signals, "debug::index::miss", 2, 0);
     return 0;
 }
 
 gint
-luaH_class_newindex_miss_property(lua_State *L, lua_object_t *obj)
+luaH_class_newindex_miss_property(lua_State *L, lua_object_t* UNUSED(obj))
 {
-    (void) obj;
     signal_object_emit(L, luakit_class.signals, "debug::newindex::miss", 3, 0);
     return 0;
 }

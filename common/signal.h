@@ -22,10 +22,7 @@
 #ifndef LUAKIT_COMMON_SIGNAL
 #define LUAKIT_COMMON_SIGNAL
 
-#include <glib/garray.h>
-#include <glib/gstrfuncs.h>
-#include <glib/gtestutils.h>
-#include <glib/gtree.h>
+#include <glib.h>
 
 #include "common/util.h"
 
@@ -34,9 +31,8 @@ typedef GPtrArray  signal_array_t;
 
 /* signals tree key compare function */
 static inline gint
-signal_cmp(gconstpointer a, gconstpointer b, gpointer p)
+signal_cmp(gconstpointer a, gconstpointer b, gpointer UNUSED(p))
 {
-    (void) p;
     return g_strcmp0(a, b);
 }
 

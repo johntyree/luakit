@@ -23,13 +23,22 @@
 #ifndef LUAKIT_COMMON_UTIL_H
 #define LUAKIT_COMMON_UTIL_H
 
-#include <glib/gtypes.h>
+#include <glib.h>
 #include <string.h>
 #include <unistd.h>
 
 /* Useful macros */
 #define NONULL(x) (x ? x : "")
 #define LENGTH(x) sizeof(x)/sizeof((x)[0])
+
+#ifdef UNUSED
+#elif defined(__GNUC__)
+# define UNUSED(x) UNUSED_ ## x __attribute__((unused))
+#elif defined(__LCLINT__)
+# define UNUSED(x) /*@unused@*/ x
+#else
+# define UNUSED(x) x
+#endif
 
 /* stack pushing macros */
 #define PB_CASE(t, b) case L_TK_##t: lua_pushboolean   (L, b); return 1;

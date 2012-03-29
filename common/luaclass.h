@@ -26,7 +26,7 @@
 #include "common/signal.h"
 #include "common/tokenize.h"
 
-#include <glib/gtree.h>
+#include <glib.h>
 
 typedef struct     lua_class_property lua_class_property_t;
 typedef GHashTable lua_class_property_array_t;
@@ -68,6 +68,8 @@ void luaH_class_remove_signal(lua_State *, lua_class_t *, const gchar *name,
         gint ud);
 gint luaH_class_emit_signal(lua_State *, lua_class_t *, const gchar *name,
         gint nargs, gint nret);
+
+gint luaH_class_property_signal(lua_State *, lua_class_t *, luakit_token_t);
 
 void luaH_openlib(lua_State *, const gchar *, const struct luaL_reg[],
         const struct luaL_reg[]);

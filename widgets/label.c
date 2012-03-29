@@ -22,77 +22,101 @@
 #include "widgets/common.h"
 
 static gint
-luaH_label_set_alignment(lua_State *L)
+luaH_label_get_align(lua_State *L, widget_t *w)
 {
-    widget_t *w = luaH_checkwidget(L, 1);
-    gfloat xalign = luaL_checknumber(L, 2);
-    gfloat yalign = luaL_checknumber(L, 3);
+    gfloat xalign, yalign;
+    gtk_misc_get_alignment(GTK_MISC(w->widget), &xalign, &yalign);
+    lua_createtable(L, 0, 2);
+    /* set align.x */
+    lua_pushliteral(L, "x");
+    lua_pushnumber(L, xalign);
+    lua_rawset(L, -3);
+    /* set align.y */
+    lua_pushliteral(L, "y");
+    lua_pushnumber(L, yalign);
+    lua_rawset(L, -3);
+    return 1;
+}
+
+static gint
+luaH_label_set_align(lua_State *L, widget_t *w)
+{
+    luaH_checktable(L, 3);
+    /* get old alignment values */
+    gfloat xalign, yalign;
+    gtk_misc_get_alignment(GTK_MISC(w->widget), &xalign, &yalign);
+    /* get align.x */
+    if (luaH_rawfield(L, 3, "x")) {
+        xalign = (gfloat) lua_tonumber(L, -1);
+        lua_pop(L, 1);
+    }
+    /* get align.y */
+    if (luaH_rawfield(L, 3, "y")) {
+        yalign = (gfloat) lua_tonumber(L, -1);
+        lua_pop(L, 1);
+    }
     gtk_misc_set_alignment(GTK_MISC(w->widget), xalign, yalign);
     return 0;
 }
 
 static gint
-luaH_label_get_alignment(lua_State *L)
+luaH_label_get_padding(lua_State *L, widget_t *w)
 {
-    widget_t *w = luaH_checkwidget(L, 1);
-    gfloat xalign, yalign;
-    gtk_misc_get_alignment(GTK_MISC(w->widget), &xalign, &yalign);
-    lua_pushnumber(L, xalign);
-    lua_pushnumber(L, yalign);
-    return 2;
+    gint xpad, ypad;
+    gtk_misc_get_padding(GTK_MISC(w->widget), &xpad, &ypad);
+    lua_createtable(L, 0, 2);
+    /* set padding.x */
+    lua_pushliteral(L, "x");
+    lua_pushnumber(L, xpad);
+    lua_rawset(L, -3);
+    /* set padding.y */
+    lua_pushliteral(L, "y");
+    lua_pushnumber(L, ypad);
+    lua_rawset(L, -3);
+    return 1;
 }
 
 static gint
-luaH_label_set_padding(lua_State *L)
+luaH_label_set_padding(lua_State *L, widget_t *w)
 {
-    widget_t *w = luaH_checkwidget(L, 1);
-    gint xpad = luaL_checknumber(L, 2);
-    gint ypad = luaL_checknumber(L, 3);
+    luaH_checktable(L, 3);
+    /* get old padding values */
+    gint xpad = 0, ypad = 0;
+    gtk_misc_get_padding(GTK_MISC(w->widget), &xpad, &ypad);
+    /* get padding.x */
+    if (luaH_rawfield(L, 3, "x")) {
+        xpad = (gint) lua_tonumber(L, -1);
+        lua_pop(L, 1);
+    }
+    /* get padding.y */
+    if (luaH_rawfield(L, 3, "y")) {
+        ypad = (gint) lua_tonumber(L, -1);
+        lua_pop(L, 1);
+    }
     gtk_misc_set_padding(GTK_MISC(w->widget), xpad, ypad);
     return 0;
 }
 
 static gint
-luaH_label_get_padding(lua_State *L)
+luaH_label_index(lua_State *L, widget_t *w, luakit_token_t token)
 {
-    widget_t *w = luaH_checkwidget(L, 1);
-    gint xpad, ypad;
-    gtk_misc_get_padding(GTK_MISC(w->widget), &xpad, &ypad);
-    lua_pushnumber(L, xpad);
-    lua_pushnumber(L, ypad);
-    return 2;
-}
+    switch(token) {
+      LUAKIT_WIDGET_INDEX_COMMON(w)
 
-static gint
-luaH_label_set_width(lua_State *L)
-{
-    widget_t *w = luaH_checkwidget(L, 1);
-    gint len = luaL_checknumber(L, 2);
-    gtk_label_set_width_chars(GTK_LABEL(w->widget), len);
-    return 0;
-}
+      case L_TK_PADDING:
+        return luaH_label_get_padding(L, w);
 
-static gint
-luaH_label_index(lua_State *L, luakit_token_t token)
-{
-    widget_t *w = luaH_checkwidget(L, 1);
+      case L_TK_ALIGN:
+        return luaH_label_get_align(L, w);
 
-    switch(token)
-    {
-      LUAKIT_WIDGET_INDEX_COMMON
-
-      /* push class methods */
-      PF_CASE(GET_ALIGNMENT,    luaH_label_get_alignment);
-      PF_CASE(GET_PADDING,      luaH_label_get_padding);
-      PF_CASE(SET_ALIGNMENT,    luaH_label_set_alignment);
-      PF_CASE(SET_PADDING,      luaH_label_set_padding);
-      PF_CASE(SET_WIDTH,        luaH_label_set_width);
       /* push string properties */
       PS_CASE(FG,               g_object_get_data(G_OBJECT(w->widget), "fg"))
       PS_CASE(FONT,             g_object_get_data(G_OBJECT(w->widget), "font"))
       PS_CASE(TEXT,             gtk_label_get_label(GTK_LABEL(w->widget)))
       /* push boolean properties */
       PB_CASE(SELECTABLE,       gtk_label_get_selectable(GTK_LABEL(w->widget)))
+      /* push integer properties */
+      PI_CASE(WIDTH,            gtk_label_get_width_chars(GTK_LABEL(w->widget)))
 
       default:
         break;
@@ -101,16 +125,22 @@ luaH_label_index(lua_State *L, luakit_token_t token)
 }
 
 static gint
-luaH_label_newindex(lua_State *L, luakit_token_t token)
+luaH_label_newindex(lua_State *L, widget_t *w, luakit_token_t token)
 {
     size_t len;
-    widget_t *w = luaH_checkwidget(L, 1);
     const gchar *tmp;
     GdkColor c;
     PangoFontDescription *font;
 
-    switch(token)
-    {
+    switch(token) {
+      LUAKIT_WIDGET_NEWINDEX_COMMON(w)
+
+      case L_TK_PADDING:
+        return luaH_label_set_padding(L, w);
+
+      case L_TK_ALIGN:
+        return luaH_label_set_align(L, w);
+
       case L_TK_TEXT:
         gtk_label_set_markup(GTK_LABEL(w->widget),
             luaL_checklstring(L, 3, &len));
@@ -139,16 +169,21 @@ luaH_label_newindex(lua_State *L, luakit_token_t token)
         gtk_label_set_selectable(GTK_LABEL(w->widget), luaH_checkboolean(L, 3));
         break;
 
+      case L_TK_WIDTH:
+        gtk_label_set_width_chars(GTK_LABEL(w->widget),
+                (gint)luaL_checknumber(L, 3));
+        return 0;
+
       default:
         warn("unknown property: %s", luaL_checkstring(L, 2));
         return 0;
     }
 
-    return luaH_object_emit_property_signal(L, 1);
+    return luaH_object_property_signal(L, 1, token);
 }
 
 widget_t *
-widget_label(widget_t *w)
+widget_label(widget_t *w, luakit_token_t UNUSED(token))
 {
     w->index = luaH_label_index;
     w->newindex = luaH_label_newindex;
@@ -156,7 +191,6 @@ widget_label(widget_t *w)
 
     /* create gtk label widget as main widget */
     w->widget = gtk_label_new(NULL);
-    g_object_set_data(G_OBJECT(w->widget), "lua_widget", (gpointer) w);
 
     /* setup default settings */
     gtk_label_set_selectable(GTK_LABEL(w->widget), FALSE);
@@ -165,10 +199,8 @@ widget_label(widget_t *w)
     gtk_misc_set_padding(GTK_MISC(w->widget), 2, 2);
 
     g_object_connect(G_OBJECT(w->widget),
-      "signal::focus-in-event",    G_CALLBACK(focus_cb),      w,
-      "signal::focus-out-event",   G_CALLBACK(focus_cb),      w,
+      LUAKIT_WIDGET_SIGNAL_COMMON(w)
       "signal::key-press-event",   G_CALLBACK(key_press_cb),  w,
-      "signal::parent-set",        G_CALLBACK(parent_set_cb), w,
       NULL);
 
     gtk_widget_show(w->widget);

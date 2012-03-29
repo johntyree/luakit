@@ -9,7 +9,8 @@ end
 
 -- Session functions
 session = {
-    file = luakit.cache_dir .. "/session",
+    -- The file which we'll use for session info, $XDG_DATA_HOME/luakit/session
+    file = luakit.data_dir .. "/session",
 
     -- Save all given windows uris to file.
     save = function (wins)
@@ -17,14 +18,13 @@ session = {
         -- Save tabs from all the given windows
         for wi, w in pairs(wins) do
             local current = w.tabs:current()
-            for ti = 1, w.tabs:count() do
-                local uri = w.tabs:atindex(ti).uri or "about:blank"
-                table.insert(lines, string.format("%d\t%d\t%s\t%s", wi, ti, tostring(current == ti), uri))
+            for ti, tab in ipairs(w.tabs.children) do
+                table.insert(lines, string.format("%d\t%d\t%s\t%s", wi, ti,
+                    tostring(current == ti), tab.uri))
             end
         end
 
         if #lines > 0 then
-            -- Save to $XDG_CACHE_HOME/luakit/session
             local fh = io.open(session.file, "w")
             fh:write(table.concat(lines, "\n"))
             io.close(fh)
