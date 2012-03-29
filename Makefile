@@ -83,7 +83,7 @@ install: luakit
 	install -d $(DESTDIR)/usr/share/applications
 	install extras/luakit.desktop $(DESTDIR)/usr/share/applications/
 	install -d $(DESTDIR)$(MANDIR)/man1/
-	install -m644 luakit.1 $(DESTDIR)$(MANDIR)/man1/
+	# install -m644 luakit.1 $(DESTDIR)$(MANDIR)/man1/
 
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/bin/luakit $(DESTDIR)$(PREFIX)/share/luakit $(DESTDIR)$(MANDIR)/man1/luakit.1
