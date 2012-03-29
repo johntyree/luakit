@@ -3,10 +3,10 @@
 VERSION   ?= $(shell ./build-utils/getversion.sh)
 
 PREFIX     ?= /usr/local
-INSTALLDIR := $(DESTDIR)$(PREFIX)
+# INSTALLDIR := $(DESTDIR)$(PREFIX)
 
-MANPREFIX  ?= $(PREFIX)/share/man
-MANPREFIX  := $(DESTDIR)$(MANPREFIX)
+MANDIR  ?= $(PREFIX)/share/man
+MANDIR  := $(DESTDIR)$(MANDIR)
 
 DOCDIR     ?= $(PREFIX)/share/luakit/docs
 DOCDIR     := $(DESTDIR)$(DOCDIR)

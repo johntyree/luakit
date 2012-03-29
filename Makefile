@@ -10,7 +10,8 @@ SRCS  = $(filter-out $(TSRC),$(wildcard *.c) $(wildcard common/*.c) $(wildcard c
 HEADS = $(wildcard *.h) $(wildcard common/*.h) $(wildcard widgets/*.h) $(wildcard clib/*.h) $(wildcard clib/soup/*.h) $(THEAD) globalconf.h
 OBJS  = $(foreach obj,$(SRCS:.c=.o),$(obj))
 
-all: options newline luakit luakit.1
+# all: options newline luakit luakit.1
+all: options newline luakit
 
 options:
 	@echo luakit build options:
@@ -19,8 +20,8 @@ options:
 	@echo "CFLAGS       = $(CFLAGS)"
 	@echo "CPPFLAGS     = $(CPPFLAGS)"
 	@echo "LDFLAGS      = $(LDFLAGS)"
-	@echo "INSTALLDIR   = $(INSTALLDIR)"
-	@echo "MANPREFIX    = $(MANPREFIX)"
+	@echo "DESTDIR)$(PREFIX   = $(DESTDIR)$(PREFIX)"
+	@echo "MANDIR    = $(MANDIR)"
 	@echo "DOCDIR       = $(DOCDIR)"
 	@echo
 	@echo build targets:
@@ -58,18 +59,18 @@ clean:
 	rm -rf apidocs doc luakit $(OBJS) $(TSRC) $(THEAD) globalconf.h luakit.1
 
 install:
-	install -d $(INSTALLDIR)/share/luakit/
-	install -d $(DOCDIR)
-	install -m644 README.md AUTHORS COPYING* $(DOCDIR)
-	cp -r lib $(INSTALLDIR)/share/luakit/
-	chmod 755 $(INSTALLDIR)/share/luakit/lib/
-	chmod 755 $(INSTALLDIR)/share/luakit/lib/lousy/
-	chmod 755 $(INSTALLDIR)/share/luakit/lib/lousy/widget/
-	chmod 644 $(INSTALLDIR)/share/luakit/lib/*.lua
-	chmod 644 $(INSTALLDIR)/share/luakit/lib/lousy/*.lua
-	chmod 644 $(INSTALLDIR)/share/luakit/lib/lousy/widget/*.lua
-	install -d $(INSTALLDIR)/bin
-	install luakit $(INSTALLDIR)/bin/luakit
+	install -d $(DESTDIR)$(PREFIX)/share/luakit/
+	install -d $(DESTDIR)$(DOCDIR)
+	install -m644 README.md AUTHORS COPYING* $(DESTDIR)$(DOCDIR)
+	cp -r lib $(DESTDIR)$(PREFIX)/share/luakit/
+	chmod 755 $(DESTDIR)$(PREFIX)/share/luakit/lib/
+	chmod 755 $(DESTDIR)$(PREFIX)/share/luakit/lib/lousy/
+	chmod 755 $(DESTDIR)$(PREFIX)/share/luakit/lib/lousy/widget/
+	chmod 644 $(DESTDIR)$(PREFIX)/share/luakit/lib/*.lua
+	chmod 644 $(DESTDIR)$(PREFIX)/share/luakit/lib/lousy/*.lua
+	chmod 644 $(DESTDIR)$(PREFIX)/share/luakit/lib/lousy/widget/*.lua
+	install -d $(DESTDIR)$(PREFIX)/bin
+	install luakit $(DESTDIR)$(PREFIX)/bin/luakit
 	install -d $(DESTDIR)/etc/xdg/luakit/
 	install config/*.lua $(DESTDIR)/etc/xdg/luakit/
 	chmod 644 $(DESTDIR)/etc/xdg/luakit/*.lua
@@ -77,12 +78,12 @@ install:
 	install extras/luakit.png $(DESTDIR)/usr/share/pixmaps/
 	install -d $(DESTDIR)/usr/share/applications
 	install extras/luakit.desktop $(DESTDIR)/usr/share/applications/
-	install -d $(MANPREFIX)/man1/
-	install -m644 luakit.1 $(MANPREFIX)/man1/
+	install -d $(DESTDIR)$(MANDIR)/man1/
+	install -m644 luakit.1 $(DESTDIR)$(MANDIR)/man1/
 
 uninstall:
-	rm -rf $(INSTALLDIR)/bin/luakit $(INSTALLDIR)/share/luakit $(MANPREFIX)/man1/luakit.1
-	rm -rf /usr/share/applications/luakit.desktop /usr/share/pixmaps/luakit.png
+	rm -rf $(DESTDIR)$(PREFIX)/bin/luakit $(DESTDIR)$(PREFIX)/share/luakit $(DESTDIR)$(MANDIR)/man1/luakit.1
+	rm -rf $(DESTDIR)/usr/share/applications/luakit.desktop $(DESTDIR)/usr/share/pixmaps/luakit.png
 
 newline: options;@echo
 .PHONY: all clean options install newline apidoc doc
