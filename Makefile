@@ -20,8 +20,9 @@ options:
 	@echo "CFLAGS       = $(CFLAGS)"
 	@echo "CPPFLAGS     = $(CPPFLAGS)"
 	@echo "LDFLAGS      = $(LDFLAGS)"
-	@echo "DESTDIR)$(PREFIX   = $(DESTDIR)$(PREFIX)"
-	@echo "MANDIR    = $(MANDIR)"
+	@echo "PREFIX       = $(PREFIX)"
+	@echo "DESTDIR      = $(DESTDIR)"
+	@echo "MANDIR       = $(MANDIR)"
 	@echo "DOCDIR       = $(DOCDIR)"
 	@echo
 	@echo build targets:
@@ -46,6 +47,7 @@ luakit: $(OBJS)
 	@$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
 luakit.1: luakit
+	@echo help2man -N -o $@ ./$<
 	help2man -N -o $@ ./$<
 
 apidoc: luadoc/luakit.lua
@@ -58,7 +60,7 @@ doc: globalconf.h $(THEAD) $(TSRC)
 clean:
 	rm -rf apidocs doc luakit $(OBJS) $(TSRC) $(THEAD) globalconf.h luakit.1
 
-install:
+install: luakit
 	install -d $(DESTDIR)$(PREFIX)/share/luakit/
 	install -d $(DESTDIR)$(DOCDIR)
 	install -m644 README.md AUTHORS COPYING* $(DESTDIR)$(DOCDIR)
