@@ -85,6 +85,13 @@ install: luakit
 	install -d $(DESTDIR)$(MANDIR)/man1/
 	# install -m644 luakit.1 $(DESTDIR)$(MANDIR)/man1/
 
+slackpkg:
+	make $(MAKEOPTS)
+	make $(MAKEOPTS) install
+	cd pkg && makepkg -l y -c n /tmp/luakit-$(shell git id)-$(ARCH)-1jet.tgz
+	sudo removepkg luakit
+	sudo installpkg /tmp/luakit-$(shell git id)-$(ARCH)-1jet.tgz
+
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/bin/luakit $(DESTDIR)$(PREFIX)/share/luakit $(DESTDIR)$(MANDIR)/man1/luakit.1
 	rm -rf $(DESTDIR)/usr/share/applications/luakit.desktop $(DESTDIR)/usr/share/pixmaps/luakit.png
