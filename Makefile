@@ -81,9 +81,9 @@ install: luakit
 	install -d $(DESTDIR)/usr/share/pixmaps
 	install extras/luakit.png $(DESTDIR)/usr/share/pixmaps/
 	install -d $(DESTDIR)/usr/share/applications
-	install extras/luakit.desktop $(DESTDIR)/usr/share/applications/
-	install -d $(DESTDIR)$(MANDIR)/man1/
-	# install -m644 luakit.1 $(DESTDIR)$(MANDIR)/man1/
+	install -m0644 extras/luakit.desktop $(DESTDIR)/usr/share/applications/
+	install -d $(MANDIR)/man1/
+	install -m644 luakit.1 $(MANDIR)/man1/
 
 slackpkg:
 	make $(MAKEOPTS) $(DESTDIR) DEVELOPMENT_PATHS=0
@@ -95,6 +95,12 @@ slackpkg:
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/bin/luakit $(DESTDIR)$(PREFIX)/share/luakit $(DESTDIR)$(MANDIR)/man1/luakit.1
 	rm -rf $(DESTDIR)/usr/share/applications/luakit.desktop $(DESTDIR)/usr/share/pixmaps/luakit.png
+
+lunit:
+	git clone git://repo.or.cz/lunit.git
+
+run-tests: luakit lunit
+	@./luakit -c tests/lunit-run.lua tests/test_*.lua
 
 newline: options;@echo
 .PHONY: all clean options install newline apidoc doc
