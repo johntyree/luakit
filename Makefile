@@ -10,8 +10,7 @@ SRCS  = $(filter-out $(TSRC),$(wildcard *.c) $(wildcard common/*.c) $(wildcard c
 HEADS = $(wildcard *.h) $(wildcard common/*.h) $(wildcard widgets/*.h) $(wildcard clib/*.h) $(wildcard clib/soup/*.h) $(THEAD) globalconf.h
 OBJS  = $(foreach obj,$(SRCS:.c=.o),$(obj))
 
-# all: options newline luakit luakit.1
-all: options newline luakit
+all: options newline luakit luakit.1
 
 options:
 	@echo luakit build options:
@@ -82,10 +81,13 @@ install: luakit
 	install extras/luakit.png $(DESTDIR)/usr/share/pixmaps/
 	install -d $(DESTDIR)/usr/share/applications
 	install -m0644 extras/luakit.desktop $(DESTDIR)/usr/share/applications/
-	install -d $(MANDIR)/man1/
-	install -m644 luakit.1 $(MANDIR)/man1/
+	install -d $(DESTDIR)$(MANDIR)/man1/
+	install -m644 luakit.1 $(DESTDIR)$(MANDIR)/man1/
 
-slackpkg:
+pkgdir:
+	mkdir -p /dev/shm/pkg
+
+slackpkg: pkgdir
 	make $(MAKEOPTS) $(DESTDIR) DEVELOPMENT_PATHS=0
 	rm -r $(DESTDIR) && mkdir -p $(DESTDIR) && make $(MAKEOPTS) $(DESTDIR) DEVELOPMENT_PATHS=0 install
 	cd $(DESTDIR) && makepkg -l y -c n /tmp/luakit-$(shell git id)-$(ARCH)-1jet.tgz
