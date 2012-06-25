@@ -145,10 +145,10 @@ local prototype = {
     run = function (s, view)
         -- Load common greasemonkey methods
         if not lstate[view].gmloaded then
-            view:eval_js(gm_functions)
+            view:eval_js(gm_functions, { no_return = true })
             lstate[view].gmloaded = true
         end
-        view:eval_js(s.js, { source = s.file })
+        view:eval_js(s.js, { source = s.file, no_return = true })
         lstate[view].loaded[s.file] = s
     end,
     -- Check if the given uri matches the userscripts include/exclude patterns
@@ -275,7 +275,7 @@ end
 local cmd = bind.cmd
 add_cmds({
     -- Saves the content of the open view as an userscript
-    cmd({"userscriptinstall", "usi", "usinstall"}, function (w, a)
+    cmd({"userscriptinstall", "usi", "usinstall"}, "install userscript", function (w, a)
         local view = w.view
         local file = string.match(view.uri, "/([^/]+%.user%.js)$")
         if (not file) then return w:error("URL is not a *.user.js file") end
@@ -287,7 +287,8 @@ add_cmds({
         w:notify("Installed userscript to: " .. dir .. "/" .. file)
     end),
 
-    cmd({"userscripts", "uscripts"}, function (w) w:set_mode("uscriptlist") end),
+    cmd({"userscripts", "uscripts"}, "list userscripts",
+        function (w) w:set_mode("uscriptlist") end),
 })
 
 -- Add mode to display all userscripts in menu
