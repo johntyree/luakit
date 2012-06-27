@@ -90,8 +90,9 @@ pkgdir:
 slackpkg: pkgdir
 	make $(MAKEOPTS) $(DESTDIR) DEVELOPMENT_PATHS=0
 	rm -r $(DESTDIR) && mkdir -p $(DESTDIR) && make $(MAKEOPTS) $(DESTDIR) DEVELOPMENT_PATHS=0 install
-	cd $(DESTDIR) && makepkg -l y -c n /tmp/luakit-0-$(shell git id)-$(ARCH)-1jet.tgz
-	sudo upgradepkg --reinstall --install-new /tmp/luakit-0-$(shell git id)-$(ARCH)-1jet.tgz
+	cd $(DESTDIR) && makepkg -l y -c n /tmp/luakit-$(shell git id)-$(ARCH)-1jet.tgz
+	sudo removepkg $(shell find /var/log/packages/ -name "luakit*" -exec basename {} \;)
+	sudo installpkg /tmp/luakit-$(shell git id)-$(ARCH)-1jet.tgz
 
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/bin/luakit $(DESTDIR)$(PREFIX)/share/luakit $(DESTDIR)$(MANDIR)/man1/luakit.1
