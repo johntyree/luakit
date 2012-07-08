@@ -94,10 +94,17 @@ require "userscripts"
 
 -- Add bookmarks support
 require "bookmarks"
+require "bookmarks_chrome"
 
 -- Add download support
 require "downloads"
 require "downloads_chrome"
+
+-- Example using xdg-open for opening downloads / showing download folders
+--downloads.add_signal("open-file", function (file, mime)
+--    luakit.spawn(string.format("xdg-open %q", file))
+--    return true
+--end)
 
 -- Add vimperator-like link hinting & following
 -- (depends on downloads)
