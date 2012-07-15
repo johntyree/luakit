@@ -4,47 +4,38 @@
 
 -- Table of modes and their callback hooks
 local modes = {}
+local join = lousy.util.table.join
 
--- Add new mode table (merges with old table).
-function new_mode(name, mode)
+-- Add new mode table (optionally merges with original mode)
+function new_mode(name, mode, replace)
     assert(string.match(name, "^[%w-_]+$"), "invalid mode name: " .. name)
-    modes[name] = lousy.util.table.join(modes[name] or {}, mode, { name = name })
+    modes[name] = join((not replace and modes[name]) or {},
+        mode, { name = name })
 end
 
--- Get mode table.
-function get_mode(name)
-    assert(string.match(name, "^[%w-_]+$"), "invalid mode name: " .. name)
-    return modes[name]
-end
+-- Get mode table
+function get_mode(name) return modes[name] end
 
 -- Attach window & input bar signals for mode hooks
 window.init_funcs.modes_setup = function (w)
     -- Calls the `enter` and `leave` mode hooks.
-    w:add_signal("mode-changed", function (_, name)
+    w:add_signal("mode-changed", function (_, name, ...)
         local leave = (w.mode or {}).leave
 
         -- Get new modes functions/hooks/data
-        local mode = modes[name]
-
-        -- Create w.mode object
-        w.mode = setmetatable({}, {
-            __index    = mode,
-            __newindex = function () error("trying to edit w.mode") end,
-        })
+        local mode = assert(modes[name], "invalid mode: " .. name)
 
         -- Call last modes leave hook.
         if leave then leave(w) end
 
-        -- Check new mode
-        if not mode then
-            error("changed to un-handled mode: " .. name)
-        end
+        -- Create w.mode object
+        w.mode = mode
 
         -- Update window binds
         w:update_binds(name)
 
         -- Call new modes enter hook.
-        if mode.enter then mode.enter(w) end
+        if mode.enter then mode.enter(w, ...) end
 
         w:emit_signal("mode-entered", mode)
     end)
@@ -77,11 +68,9 @@ window.init_funcs.modes_setup = function (w)
 end
 
 -- Add mode related window methods
-local mset, mget = lousy.mode.set, lousy.mode.get
-for name, func in pairs({
-    set_mode = function (w, name)        mset(w, name)   end,
-    is_mode  = function (w, name) return name == mget(w) end,
-}) do window.methods[name] = func end
+window.methods.set_mode = lousy.mode.set
+local mget = lousy.mode.get
+window.methods.is_mode = function (w, name) return name == mget(w) end
 
 -- Setup normal mode
 new_mode("normal", {
