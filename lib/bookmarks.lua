@@ -115,7 +115,7 @@ function untag(bookmark_id, name_or_id)
 
     -- Remove tag from bookmark
     if tag then
-        db:exec("DELETE FROM tagmap WHERE bid = ? AND tid = ?",
+        db:exec("DELETE FROM tagmap WHERE bookmark_id = ? AND tag_id = ?",
             { bookmark_id, tag.id })
         _M.emit_signal("untagged-bookmark", bookmark_id, tag)
         delete_orphan_tags()
@@ -134,7 +134,7 @@ function add(uri, opts)
 
     -- Add new bookmark
     db:exec("INSERT INTO bookmarks VALUES (NULL, ?, ?, ?, ?, ?)",
-        { uri, opts.title, opts.desc, os.time(), os.time() })
+        { uri, opts.title, opts.desc, opts.created or os.time(), os.time() })
 
     -- Get new bookmark id
     local bookmark_id = db:exec("SELECT last_insert_rowid() AS id")[1].id

@@ -18,6 +18,8 @@ local error = error
 local bookmarks = require("bookmarks")
 local lousy = require("lousy")
 local chrome = require("chrome")
+local markdown = require("markdown")
+local sql_escape = lousy.util.sql_escape
 local add_binds = add_binds
 local add_cmds = add_cmds
 local webview = webview
@@ -61,9 +63,15 @@ local html = [==[
             font-weight: normal;
         }
 
-        #search-form input {
+        #input {
             min-width: 33%;
             width: 10em;
+            font-size: 1.6em;
+            font-weight: normal;
+        }
+
+        #search {
+            padding: 0 0.6em;
             font-size: 1.6em;
             font-weight: normal;
         }
@@ -79,100 +87,191 @@ local html = [==[
         }
 
         .bookmark {
-            margin: 0;
-            padding: 0.3em;
-            list-style: none;
-            border: 1px solid #fff;
             font-size: 1.2em;
-            display: -webkit-box;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
+            display: block;
+            padding: .5em;
+            margin: 0.2em 0;
+            left: 0;
+            right: 0;
+            border: 1px solid #fff;
+            -webkit-border-radius: 0.3em;
         }
 
         .bookmark:hover {
-            background-color: #f2f2f2;
-            border: 1px solid #e5e5e5;
-            -webkit-border-radius: 4px;
+            background-color: #f8f8f8;
         }
 
-        .bookmark .title {
-            margin: 0;
+        .bookmark .top, .bookmark .bottom {
+            display: block;
         }
 
-        .bookmark .title a {
+        .bookmark .top {
+            max-width: 700px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 1em;
+        }
+
+        .bookmark .top .title {
             text-decoration: none;
-            overflow: visible;
+            font-size: 1.1em;
         }
 
-        .bookmark .title a:hover {
+        .bookmark .top .title:hover {
             text-decoration: underline;
         }
 
-        .bookmark .tags {
-            display: -webkit-box;
+        .bookmark .bottom {
+            margin: .5em 0 0 .5em;
+            font-size: 0.9em;
+            vertical-align: middle;
+            white-space: nowrap;
         }
 
-        .bookmark .tag {
-            margin: 0.3em 0.5em 0 0;
-            padding: 0.4em;
-            font-size: 0.8em;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: #888;
+        .bookmark .bottom a {
+            text-decoration: none;
+            -webkit-user-select: none;
+            cursor: default;
+        }
+
+        .bookmark .tags a {
+            margin: 0 .3em;
+            padding: .2em .4em;
+            color: #666;
             background-color: #f0f0f0;
             border-left: 1px solid #f5f5f5;
             border-top: 1px solid #f5f5f5;
             border-bottom: 1px solid #bbb;
             border-right: 1px solid #bbb;
-            -webkit-user-select: none;
-            cursor: default;
+            -webkit-border-radius: 0.3em;
+        }
+
+        .bookmark .tags a:hover {
+            color: #222;
+            cursor: pointer;
+        }
+
+        .bookmark .controls a {
+            color: #aaa;
+            margin: 0 .3em;
+        }
+
+        .bookmark .controls a:hover {
+            color: #11c;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .bookmark .hidden {
+            opacity: 0;
+        }
+
+        .bookmark .desc {
+            border-left: 1px solid #aaa;
+            padding: 0.3em 0 0.3em 0.5em;
+            width: 500px;
+            display: block;
+            margin: 0.2em 0 0 0.5em;
+        }
+
+        .bookmark .desc :first-child {
+            margin-top: 0;
+        }
+
+        .bookmark .desc :last-child {
+            margin-bottom: 0;
+        }
+
+        .edit {
+            margin: 1em 0 0 0.5em;
+            left: 0;
+            right: 0;
+        }
+
+        .edit li {
+            margin-left: 4em;
             display: block;
         }
 
-        .bookmark-box {
-            display: block;
+        .edit li span {
+            display: inline-block;
+            width: 4em;
+            margin-left: -4em;
+            text-align: right;
+            margin-top: 0.7em;
+            vertical-align: top;
+            line-height: 1.4em;
         }
 
-        .bookmark .tag:hover {
-            color: #000;
+        .edit .field input {
+            margin: 0.3em;
+            font-size: 1.1em;
+            display: inline-block;
+            width: 400px;
+            outline: none;
+            padding: 0.3em;
         }
 
-        .bookmark .lhs {
-            width: 7em;
-            margin: 0;
-            padding: 0;
-            color: #888;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            -webkit-user-select: none;
-            cursor: default;
+        .edit li textarea {
+            outline: none;
+            width: 350px;
+            padding: 0.3em;
+            margin: 0.3em;
+            height: 4em;
+        }
+
+        .editing, .editing:hover {
+            border: 1px solid #aaa;
+            background-color: #f8f8f8;
+        }
+
+        .edit .submit-button {
+            display: inline-block;
+            min-width: 0;
+            padding: 0.3em 0.5em;
+        }
+
+        #templates {
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <form id="search-form">
-            <input type="text" id="search" />
-        </form>
+        <input type="text" id="input" />
+        <input type="button" id="search" value="search" />
     </div>
     <div class="main">
-        <div id="results-header">
-            Bookmark Manager
-        </div>
-        <div id="results">
-        </div>
+        <div id="results-header">Bookmark Manager</div>
+        <ol id="results">
+        </ol>
     </div>
-    <div id="templates" style="display: hidden !important;">
-        <div id="bookmark-template">
-            <ol class="bookmark">
-                <li class="lhs"></li>
-                <li class="rhs">
-                    <ol class="bookmark-box">
-                        <li><div class="title"><a></a></div></li>
-                        <li><div class="tags"></div></li>
-                    </ol>
+
+    <div id="templates">
+        <div id="bookmark-skelly">
+            <li class="bookmark">
+                <div class="top"><a class="title"></a></div>
+                <div class="desc"></div>
+                <div class="bottom">
+                    <span class="date"></span>
+                    <span class="tags"></span>
+                    <span class="controls hidden">
+                        <a class="edit-button">edit</a>
+                        <a class="delete-button">delete</a>
+                    </span>
+                </div>
+            </li>
+        </div>
+        <div id="edit-skelly">
+            <ol class="edit">
+                <li class="field title"><span>Title:&nbsp;</span><input /></li>
+                <li class="field uri"><span>URI:&nbsp;</span><input /></li>
+                <li class="field tags"><span>Tags:&nbsp;</span><input /></li>
+                <li class="edit-desc"><span>Info:&nbsp;</span><textarea></textarea></li>
+                <li>
+                    <input type="button" class="submit-button" value="Update" />
+                    <input type="button" class="cancel-button" value="Cancel" />
                 </li>
             </ol>
         </div>
@@ -180,43 +279,100 @@ local html = [==[
 </body>
 ]==]
 
-
 local main_js = [=[
 $(document).ready(function () {
-    var results = bookmarks_search({ limit: 100 })
+    var default_limit = 100;
 
-    if (results.length === "undefined") {
-        return;
-    }
+    var bookmarks = {};
 
-    var $results = $("#results").eq(0);
+    var bookmark_html = $("#bookmark-skelly").html(),
+        edit_html = $("#edit-skelly").html(),
+        $results = $("#results");
 
-    var bookmark_html = $("#bookmark-template").html();
+    $("#templates").remove();
 
-    $("#templates").empty();
+    function make_bookmark(b) {
+        bookmarks[b.id] = b;
 
-    for (var i = 0; i < results.length; i++) {
-        var b = results[i];
+        var $b = $(bookmark_html);
+        $b.attr("bookmark_id", b.id);
+        $b.find(".title").attr("href", b.uri).text(b.title || b.uri);
+        $b.find(".date").text(b.date);
 
-        var $e = $(bookmark_html);
-        $e.find(".title a").attr("href", b.uri).text(b.title || b.uri);
-       // $e.find(".uri").text(b.uri);
-        $e.find(".lhs").text(b.date);
+        if (b.markdown_desc)
+            $b.find(".desc").html(b.markdown_desc);
+        else
+            $b.find(".desc").remove();
 
+        /* add tags if specified */
         if (b.tags) {
-            var $tags = $e.find(".tags");
-            $tags.empty();
-
-            var tags = (b.tags || "").split(",");
-
-            for (var j = 0; j < tags.length; j++) {
-                $tags.append($("<div></div>").addClass("tag").text(tags[j]));
-            }
+            var $tags = $b.find(".tags").eq(0);
+            var tags = (b.tags || "").split(","), len = tags.length;
+            for (var i = 0; i < len; i++)
+                $tags.append($("<a></a>").text(tags[i]));
         }
 
-        $results.append($e);
+        return $b;
     }
 
+    function render_results(results) {
+        if (results.length === "undefined") return;
+
+        /* clear results container */
+        $results.empty();
+
+        /* add new results */
+        for (var i = 0; i < results.length; i++)
+            $results.append(make_bookmark(results[i]));
+    };
+
+    // Show bookmark controls when hovering directly over buttons
+    $results.on("mouseenter", ".bookmark .controls", function () {
+        $(this).removeClass("hidden");
+    });
+
+    // Hide controls when leaving bookmark
+    $results.on("mouseleave", ".bookmark", function () {
+        $(this).find(".bottom .controls").addClass("hidden");
+    });
+
+    $results.on("click", ".bookmark .controls .edit-button", function (e) {
+        var $b = $(this).parents(".bookmark").eq(0), $e = $(edit_html);
+
+        // Remove previous edit form
+        $b.find(".edit").remove();
+
+        $b.addClass("editing");
+
+        // Animate out & delete form
+        $e.find(".cancel-button").click(function (e) {
+            $b.removeClass("editing");
+            $e.slideUp(function () { $e.remove(); })
+        });
+
+        var b = bookmarks[$b.attr("bookmark_id")],
+            $title = $e.find(".title input").eq(0).val(b.title),
+            $uri = $e.find(".uri input").eq(0).val(b.uri),
+            $tags = $e.find(".tags input").eq(0).val(b.tags);
+            $desc = $e.find(".edit-desc textarea").eq(0).val(b.desc);
+
+        $e.find(".submit-button").click(function (e) {
+            // Add new bookmark
+            bookmarks_add($uri.val(), { title: $title.val(), tags: $tags.val(),
+                desc: $desc.val(), created: b.created });
+            // Remove old bookmark
+            bookmarks_remove(b.id);
+            $e.slideUp(function () {
+                render_results(bookmarks_search({ limit: default_limit }));
+            });
+        });
+
+        $e.hide();
+        $b.append($e);
+        $e.slideDown();
+    });
+
+    render_results(bookmarks_search({ limit: default_limit }));
 });
 ]=]
 
@@ -229,15 +385,23 @@ export_funcs = {
             FROM bookmarks AS b LEFT JOIN tagmap AS map LEFT JOIN tags AS t
             ON map.bookmark_id = b.id AND map.tag_id = t.id
             GROUP BY b.id
+            ORDER BY b.created DESC
             LIMIT 100
         ]]
 
         for i, row in ipairs(rows) do
-            rawset(row, "date", os.date("%d %b %Y", rawget(row, "created")))
+            rawset(row, "date", os.date("%d %B %Y", rawget(row, "created")))
+            local desc = rawget(row, "desc")
+            if desc then
+                rawset(row, "markdown_desc", markdown(desc))
+            end
         end
 
         return rows
     end,
+
+    bookmarks_add = bookmarks.add,
+    bookmarks_remove = bookmarks.remove,
 }
 
 chrome.add("bookmarks", function (view, meta)
@@ -272,9 +436,41 @@ chrome.add("bookmarks", function (view, meta)
     view:add_signal("load-status", on_first_visual)
 end)
 
+chrome_page = "luakit://bookmarks/"
+
+local key, buf = lousy.bind.key, lousy.bind.buf
+add_binds("normal", {
+    key({}, "B", "Shortcut to add a bookmark to the current URL",
+        function(w)
+            w:enter_cmd(":bookmark " .. (w.view.uri or "http://") .. " ")
+        end),
+
+    buf("^gb$", "Open bookmarks manager in the current tab.",
+        function(w)
+            w:navigate(chrome_page)
+        end),
+
+    buf("^gB$", "Open bookmarks manager in a new tab.",
+        function(w)
+            w:new_tab(chrome_page)
+        end)
+})
+
 local cmd = lousy.bind.cmd
 add_cmds({
-    cmd("bookmarks", function (w)
-        w:new_tab("luakit://bookmarks/")
-    end),
+    cmd("bookmarks", "Open bookmarks manager in a new tab.",
+        function (w)
+            w:new_tab(chrome_page)
+        end),
+
+    cmd("bookmark", "Add bookmark",
+        function (w, a)
+            if not a then
+                w:error("Missing bookmark arguments (use: `:bookmark <uri> [<tags>]`)")
+                return
+            end
+            local args = lousy.util.string.split(a)
+            local uri = table.remove(args, 1)
+            bookmarks.add(uri, { tags = args })
+        end),
 })
