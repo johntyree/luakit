@@ -88,7 +88,7 @@ pkgdir:
 	mkdir -p /dev/shm/pkg
 
 slackpkg: pkgdir
-	make $(MAKEOPTS) $(DESTDIR) DEVELOPMENT_PATHS=0
+	make $(MAKEOPTS) $(DESTDIR) DEVELOPMENT_PATHS=0 all luakit.1
 	rm -r $(DESTDIR) && mkdir -p $(DESTDIR) && make $(MAKEOPTS) $(DESTDIR) DEVELOPMENT_PATHS=0 install
 	cd $(DESTDIR) && makepkg -l y -c n /tmp/luakit-$(shell git id)-$(ARCH)-1jet.tgz
 	sudo removepkg $(shell find /var/log/packages/ -name "luakit*" -exec basename {} \;)
