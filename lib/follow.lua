@@ -318,22 +318,30 @@ init_js = [=[
 ]=]
 
 stylesheet = [===[
+#luakit_follow_overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
 #luakit_follow_overlay .hint_overlay {
+    display: block;
+    position: absolute;
     background-color: #ffff99;
     border: 1px dotted #000;
     opacity: 0.3;
-    position: absolute;
     z-index: 10001;
 }
 
 #luakit_follow_overlay .hint_label {
+    display: block;
+    position: absolute;
     background-color: #000088;
     border: 1px dashed #000;
     color: #fff;
     font-size: 10px;
     font-family: monospace, courier, sans-serif;
     opacity: 0.4;
-    position: absolute;
     z-index: 10002;
 }
 
@@ -423,16 +431,22 @@ end
 
 -- Different hint matching styles
 pattern_styles = {
-    -- String match hint label & regex match text
-    match_label_re_text = function (text)
-        return #text > 0 and "^"..regex_escape(text) or "", text
-    end,
-
     -- JavaScript regular expression match hint text
     re_match_text = function (text)
         return "", text
     end,
 
+    -- JavaScript regex match hint labels & text
+    re_match_both = function (text)
+        return text, text
+    end,
+
+    -- String match hint label & regex match text
+    match_label_re_text = function (text)
+        return #text > 0 and "^"..regex_escape(text) or "", text
+    end,
+
+    -- Only match label
     match_label = function (text)
         return #text > 0 and "^"..regex_escape(text) or "", ""
     end,
