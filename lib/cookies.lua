@@ -29,6 +29,7 @@ local atime = 0
 -- Set max session age to 3600
 session_timeout = 3600
 force_session_timeout = true
+store_session_cookies = false
 
 -- Setup signals on module
 lousy.signal.setup(_M, true)
@@ -91,7 +92,7 @@ function init()
 
     query_delete_expired = db:compile [[
         DELETE FROM moz_cookies
-        WHERE expiry < ? AND lastAccessed < ?
+        WHERE expiry >= 0 AND expiry < ? AND lastAccessed < ?
     ]]
 end
 
@@ -129,7 +130,7 @@ capi.soup.add_signal("cookie-changed", function (old, new)
                 new.expires = math.ceil(time() + _M.session_timeout)
                 capi.soup.add_cookies{new}
             end
-            return
+            if not _M.store_session_cookies then return end
         end
 
         -- Insert new cookie
