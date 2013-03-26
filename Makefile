@@ -87,7 +87,7 @@ install: luakit
 	install -m644 luakit.1.gz $(DESTDIR)$(MANDIR)/man1/
 
 pkgdir:
-	mkdir -p /dev/shm/pkg
+	mkdir -p $(DESTDIR)
 
 slackpkg: pkgdir
 	make $(MAKEOPTS) $(DESTDIR) DEVELOPMENT_PATHS=0 all luakit.1
